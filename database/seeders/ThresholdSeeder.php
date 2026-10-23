@@ -11,29 +11,34 @@ class ThresholdSeeder extends Seeder
     {
         $thresholds = [
             'temperature' => [
-                'min' => 20,
-                'max' => 35,
-                'margin' => 10,
+                'min_value' => 25,
+                'warning_min' => 27,
+                'warning_max' => 33,
+                'max_value' => 35,
             ],
             'humidity' => [
-                'min' => 40,
-                'max' => 90,
-                'margin' => 10,
+                'min_value' => 50,
+                'warning_min' => 60,
+                'warning_max' => 70,
+                'max_value' => 80,
             ],
             'soil_moisture' => [
-                'min' => 20,
-                'max' => 60,
-                'margin' => 10,
+                'min_value' => 30,
+                'warning_min' => 40,
+                'warning_max' => 50,
+                'max_value' => 60,
             ],
             'brightness' => [
-                'min' => 50,
-                'max' => 1000,
-                'margin' => 10,
+                'min_value' => 2000,
+                'warning_min' => 2500,
+                'warning_max' => null,
+                'max_value' => null,
             ],
             'water_level' => [
-                'min' => 20,
-                'max' => 100,
-                'margin' => 10,
+                'min_value' => 50,
+                'warning_min' => null,
+                'warning_max' => null,
+                'max_value' => null,
             ],
         ];
 
@@ -48,13 +53,10 @@ class ThresholdSeeder extends Seeder
 
             DB::table('thresholds')->updateOrInsert(
                 ['sensor_id' => $sensor->id],
-                [
-                    'min_value' => $data['min'],
-                    'max_value' => $data['max'],
-                    'warning_margin' => $data['margin'],
+                array_merge($data, [
                     'updated_at' => now(),
                     'created_at' => now(),
-                ]
+                ])
             );
         }
     }
