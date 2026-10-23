@@ -1,3 +1,4 @@
+
 <?php
 
 namespace Database\Seeders;
@@ -9,93 +10,97 @@ class HistoricalReadingSeeder extends Seeder
 {
     public function run(): void
     {
-        $sensorValues = [
-            'temperature' => [
-                'base' => 29.4,
-                'amplitude' => 1.5,
-            ],
-            'humidity' => [
-                'base' => 74,
-                'amplitude' => 4,
-            ],
-            'soil_moisture' => [
-                'base' => 29.4,
-                'amplitude' => 3,
-            ],
-            'brightness' => [
-                'base' => 164,
-                'amplitude' => 40,
-            ],
-            'water_level' => [
-                'base' => 54,
-                'amplitude' => 4,
-            ],
-        ];
+        $sensors = DB::table('sensors')->get();
 
-        $latestHour = now()->startOfHour();
+        $readings = [];
 
-        foreach ($sensorValues as $type => $config) {
-            $sensor = DB::table('sensors')
-                ->where('type', $type)
-                ->first();
+        // Membuat data historis selama 24 jam terakhir.
+        $baseTime = now()->startOfHour();
 
-            if (!$sensor) {
-                continue;
-            }
-
+        foreach ($sensors as $sensor) {
             $threshold = DB::table('thresholds')
                 ->where('sensor_id', $sensor->id)
                 ->first();
 
+            // Lewati sensor jika threshold belum tersedia.
             if (!$threshold) {
                 continue;
             }
 
-            // 24 data, dari 23 jam lalu hingga jam terbaru.
-            for ($offset = 23; $offset >= 0; $offset--) {
-                $recordedAt = $latestHour->copy()
-                    ->subHours($offset);
+            // Membuat 24 data pembacaan untuk setiap sensor.
+            for ($i = 23; $i >= 0; $i--) {
+                $value = $this->generateValue($sensor->type);
 
-                $value = round(
-                    $config['base']
-                    + sin($offset / 3) * $config['amplitude'],
-                    2
+                $condition = $this->determineCondition(
+                    $value,
+                    $threshold
                 );
 
-                $range = $threshold->max_value
-                    - $threshold->min_value;
+                $recordedAt = $baseTime->copy()->subHours($i);
 
-                $margin = $range
-                    * $threshold->warning_margin / 100;
-
-                if (
-                    $value < $threshold->min_value
-                    || $value > $threshold->max_value
-                ) {
-                    $condition = 'critical';
-                } elseif (
-                    $value < $threshold->min_value + $margin
-                    || $value > $threshold->max_value - $margin
-                ) {
-                    $condition = 'warning';
-                } else {
-                    $condition = 'normal';
-                }
-
-                DB::table('readings')->updateOrInsert(
-                    [
-                        'sensor_id' => $sensor->id,
-                        'recorded_at' => $recordedAt
-                            ->toDateTimeString(),
-                    ],
-                    [
-                        'value' => $value,
-                        'condition' => $condition,
-                        'updated_at' => now(),
-                        'created_at' => $recordedAt,
-                    ]
-                );
+                $readings[] = [
+                    'sensor_id' => $sensor->id,
+                    'value' => $value,
+                    'condition' => $condition,
+                    'recorded_at' => $recordedAt,
+                    'created_at' => $recordedAt,
+                    'updated_at' => $recordedAt,
+                ];
             }
         }
+
+        if (!empty($readings)) {
+            DB::table('readings')->insert($readings);
+        }
+    }
+
+    /**
+     * Menghasilkan nilai sensor simulasi.
+     */
+    private function generateValue(string $type): float
+    {
+        return match ($type) {
+            'temperature' => random_int(2000, 3800) / 100,
+            'humidity' => random_int(3500, 9500) / 100,
+            'soil_moisture' => random_int(1500, 7000) / 100,
+            'brightness' => random_int(100000, 1000000) / 100,
+            'water_level' => random_int(2000, 10000) / 100,
+            default => 0.0,
+        };
+    }
+
+    /**
+     * Menentukan kondisi berdasarkan threshold sensor.
+     */
+    private function determineCondition(
+        float $value,
+        object $threshold
+    ): string {
+        // Kondisi critical: melewati batas minimum/maksimum.
+        if (
+            $value < (float) $threshold->min_value
+            || (
+                $threshold->max_value !== null
+                && $value > (float) $threshold->max_value
+            )
+        ) {
+            return 'critical';
+        }
+
+        // Kondisi warning: berada di luar rentang normal.
+        if (
+            (
+                $threshold->warning_min !== null
+                && $value < (float) $threshold->warning_min
+            )
+            || (
+                $threshold->warning_max !== null
+                && $value > (float) $threshold->warning_max
+            )
+        ) {
+            return 'warning';
+        }
+
+        return 'normal';
     }
 }
