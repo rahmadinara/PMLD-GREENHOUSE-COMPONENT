@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('devices', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('type')->unique();
+            $table->enum('status', ['online', 'offline'])->default('online');
+            $table->boolean('is_on')->default(false);
+            $table->enum('mode', ['manual', 'auto'])->default('manual');
+            $table->timestamp('last_command_at')->nullable();
             $table->timestamps();
         });
     }

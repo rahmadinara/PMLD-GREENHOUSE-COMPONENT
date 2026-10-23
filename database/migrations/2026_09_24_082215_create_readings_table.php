@@ -13,7 +13,14 @@ return new class extends Migration
     {
         Schema::create('readings', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('sensor_id')
+                ->constrained('sensors')
+                ->cascadeOnDelete();
+            $table->decimal('value');
+            $table->enum('condition',['normal', 'warning', 'critical'])->default('normal');
+            $table->timestamp('recorded_at');
             $table->timestamps();
+                $table->index(['sensor_id', 'recorded_at']);
         });
     }
 

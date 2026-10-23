@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('thresholds', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('sensor_id')
+                ->unique()
+                ->constrained('sensors')
+                ->cascadeOnDelete();
+            $table->decimal('min_value', 12, 2);
+            $table->decimal('max_value', 12, 2);
+            $table->decimal('warning_margin', 5, 2)->default(10.00);
             $table->timestamps();
         });
     }

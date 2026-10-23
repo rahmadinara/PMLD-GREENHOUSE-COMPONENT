@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('sensors', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('type')->unique();
+            $table->string('unit', 20);
+            $table->string('location')->default('Greenhouse FRC');
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
+            $table->index(['status', 'type']);
         });
     }
 
