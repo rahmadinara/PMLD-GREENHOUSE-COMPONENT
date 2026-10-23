@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Console\Commands;
@@ -10,12 +11,12 @@ use InvalidArgumentException;
 class GenerateIoTData extends Command
 {
     protected $signature = 'iot:generate-data
-        {--count=0 : Jumlah putaran, 0 berarti berjalan terus}
-        {--interval=5 : Jeda antarputaran dalam detik}
-        {--scenario=auto : Scenario data sensor}';
+        {--count=0 : Number of rounds, 0 means run continuously}
+        {--interval=5 : Delay between rounds in seconds}
+        {--scenario=auto : Sensor data scenario}';
 
     protected $description =
-        'Generate data IoT simulasi untuk greenhouse';
+        'Generate simulated IoT sensor data for the greenhouse';
 
     public function handle(SensorService $sensorService): int
     {
@@ -36,11 +37,11 @@ class GenerateIoTData extends Command
 
         if (!in_array($requestedScenario, $allowedScenarios, true)) {
             $this->error(
-                'Scenario tidak valid: ' . $requestedScenario
+                'Invalid scenario: ' . $requestedScenario
             );
 
             $this->line(
-                'Pilihan: ' . implode(', ', $allowedScenarios)
+                'Available scenarios: ' . implode(', ', $allowedScenarios)
             );
 
             return self::FAILURE;
@@ -49,7 +50,7 @@ class GenerateIoTData extends Command
         $count = max(0, (int) $this->option('count'));
         $interval = max(0, (int) $this->option('interval'));
 
-        // Hindari loop tanpa jeda jika berjalan terus.
+        // Prevent a continuous loop from running without a delay.
         if ($count === 0 && $interval === 0) {
             $interval = 1;
         }
@@ -57,17 +58,18 @@ class GenerateIoTData extends Command
         $sensors = Sensor::where('status', 'active')->get();
 
         if ($sensors->isEmpty()) {
-            $this->error('Tidak ada sensor aktif di database.');
+            $this->error('No active sensors found in the database.');
 
             return self::FAILURE;
         }
 
-        $this->info('IoT Sensor Simulator dimulai.');
-        $this->line('Jumlah sensor aktif: ' . $sensors->count());
+        $this->info('IoT Sensor Simulator started.');
+        $this->line('Number of active sensors: ' . $sensors->count());
+
         $this->line(
             $count === 0
-                ? 'Mode: berjalan terus (Ctrl+C untuk berhenti)'
-                : "Jumlah putaran: {$count}"
+                ? 'Mode: running continuously (press Ctrl+C to stop)'
+                : "Number of rounds: {$count}"
         );
 
         $round = 0;
@@ -82,7 +84,7 @@ class GenerateIoTData extends Command
             $this->newLine();
 
             $this->info(
-                "Putaran {$round} | Scenario: {$scenario}"
+                "Round {$round} | Scenario: {$scenario}"
             );
 
             foreach ($sensors as $sensor) {
@@ -114,13 +116,13 @@ class GenerateIoTData extends Command
             }
         }
 
-        $this->info('Simulator selesai.');
+        $this->info('Simulator finished.');
 
         return self::SUCCESS;
     }
 
     /**
-     * Scenario auto: campuran berbobot.
+     * Select a scenario automatically using weighted probabilities.
      */
     private function chooseScenario(): string
     {
@@ -138,7 +140,7 @@ class GenerateIoTData extends Command
     }
 
     /**
-     * Menghasilkan nilai yang sesuai dengan scenario.
+     * Generate a sensor value based on the selected scenario.
      */
     private function generateValue(
         string $type,
@@ -190,12 +192,12 @@ class GenerateIoTData extends Command
             return (float) random_int(2100, 2450);
         }
 
-        // Sensor lain tetap menggunakan nilai normal.
+        // All other sensors use normal values.
         return $this->normalValue($type);
     }
 
     /**
-     * Nilai normal sesuai rentang threshold proyek.
+     * Generate normal values based on the project's threshold ranges.
      */
     private function normalValue(string $type): float
     {
@@ -212,7 +214,7 @@ class GenerateIoTData extends Command
     private function unsupportedSensor(string $type): never
     {
         throw new InvalidArgumentException(
-            "Tipe sensor '{$type}' belum didukung simulator."
+            "Sensor type '{$type}' is not supported by the simulator."
         );
     }
 }
