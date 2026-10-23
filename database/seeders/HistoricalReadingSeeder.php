@@ -1,4 +1,3 @@
-
 <?php
 
 namespace Database\Seeders;
@@ -14,7 +13,6 @@ class HistoricalReadingSeeder extends Seeder
 
         $readings = [];
 
-        // Membuat data historis selama 24 jam terakhir.
         $baseTime = now()->startOfHour();
 
         foreach ($sensors as $sensor) {
@@ -22,12 +20,10 @@ class HistoricalReadingSeeder extends Seeder
                 ->where('sensor_id', $sensor->id)
                 ->first();
 
-            // Lewati sensor jika threshold belum tersedia.
             if (!$threshold) {
                 continue;
             }
 
-            // Membuat 24 data pembacaan untuk setiap sensor.
             for ($i = 23; $i >= 0; $i--) {
                 $value = $this->generateValue($sensor->type);
 
@@ -54,9 +50,6 @@ class HistoricalReadingSeeder extends Seeder
         }
     }
 
-    /**
-     * Menghasilkan nilai sensor simulasi.
-     */
     private function generateValue(string $type): float
     {
         return match ($type) {
@@ -69,14 +62,10 @@ class HistoricalReadingSeeder extends Seeder
         };
     }
 
-    /**
-     * Menentukan kondisi berdasarkan threshold sensor.
-     */
     private function determineCondition(
         float $value,
         object $threshold
     ): string {
-        // Kondisi critical: melewati batas minimum/maksimum.
         if (
             $value < (float) $threshold->min_value
             || (
@@ -87,7 +76,6 @@ class HistoricalReadingSeeder extends Seeder
             return 'critical';
         }
 
-        // Kondisi warning: berada di luar rentang normal.
         if (
             (
                 $threshold->warning_min !== null
