@@ -18,8 +18,9 @@ return new class extends Migration
                 ->constrained('sensors')
                 ->cascadeOnDelete();
             $table->decimal('min_value', 12, 2);
+            $table->decimal('warning_min', 12, 2);
+            $table->decimal('warning_max', 12, 2);
             $table->decimal('max_value', 12, 2);
-            $table->decimal('warning_margin', 5, 2)->default(10.00);
             $table->timestamps();
         });
     }
